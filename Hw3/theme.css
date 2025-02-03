@@ -1,0 +1,41 @@
+/* horrorTheme.css */
+
+body {
+    background-color: black;
+    color: white;
+    font-family: 'Creepster', cursive;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    background-image: url('https://example.com/dark-forest.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+h1 {
+    font-size: 3em;
+    text-shadow: 3px 3px 5px red;
+}
+
+#story {
+    font-size: 1.5em;
+    margin: 20px;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+}
+
+button {
+    font-size: 1.2em;
+    background-color: darkred;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+    button:hover {
+        background-color: red;
+    }
