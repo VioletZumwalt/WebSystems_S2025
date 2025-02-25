@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Results</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Game Results</h2>
+        <div id="playerInfo">
+            <!-- Player information will be populated here -->
+        </div>
+        <button id="playAgain">Play Again</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fetch player data from localStorage
+            const playerData = JSON.parse(localStorage.getItem('playerData'));
+
+            if (!playerData) {
+                alert("No player data found. Redirecting to start...");
+                window.location.href = "index.html";
+                return;
+            }
+
+            console.log("Final results:", playerData); 
+
+            // Display player data on results page
+            document.getElementById('playerInfo').innerHTML = `
+                    <p><strong>Name:</strong> ${playerData.firstName} ${playerData.lastName}</p>
+                    <p><strong>Age:</strong> ${playerData.age}</p>
+                    <p><strong>Attempts:</strong> ${playerData.attempts}</p>
+                `;
+
+            // Handle "Play Again" button
+            document.getElementById('playAgain').addEventListener('click', () => {
+
+                localStorage.removeItem('playerData');
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>

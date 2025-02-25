@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Memory Matching Game</h2>
+        <div id="gameGrid"></div>
+        <button id="resetGame">Restart Game</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    
+            let playerData = JSON.parse(localStorage.getItem('playerData'));
+
+            if (!playerData) {
+                alert("No player data found. Redirecting to start...");
+                window.location.href = "index.html";
+                return;
+            }
+
+            console.log("Loaded from localStorage:", playerData); 
+
+            let attempts = playerData.attempts;
+            const blankImage = 'images/blank.png';
+            const images = [];
+            for (let i = 1; i <= 6; i++) {
+                images.push(`images/img${i}.png`);
+            }
+
+            let actualImages = [...images, ...images];
+            actualImages.sort(() => Math.random() - 0.5);
+            const gameGrid = document.getElementById('gameGrid');
+            let firstCard = null, secondCard = null, matchedPairs = 0;
+
+            // Create the game grid dynamically
+            for (let index = 0; index < actualImages.length; index++) {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.index = index;
+                card.style.backgroundImage = `url('${blankImage}')`;
+                card.addEventListener('click', () => revealImage(card, index));
+                gameGrid.appendChild(card);
+            }
+
+            function revealImage(card, index) {
+                if (card.classList.contains('revealed') || secondCard) return;
+                card.classList.add('revealed');
+                card.style.backgroundImage = `url('${actualImages[index]}')`;
+
+                if (!firstCard) {
+                    firstCard = { card, index };
+                } else {
+                    secondCard = { card, index };
+                    attempts++; // Increment attempts
+                    playerData.attempts = attempts; 
+                    localStorage.setItem('playerData', JSON.stringify(playerData)); // Save updated data
+                    console.log("Updated attempts:", playerData); 
+
+                    setTimeout(checkMatch, 1000);
+                }
+            }
+
+            function checkMatch() {
+                if (actualImages[firstCard.index] !== actualImages[secondCard.index]) {
+                    firstCard.card.classList.remove('revealed');
+                    firstCard.card.style.backgroundImage = `url('${blankImage}')`;
+                    secondCard.card.classList.remove('revealed');
+                    secondCard.card.style.backgroundImage = `url('${blankImage}')`;
+                } else {
+                    matchedPairs++;
+                }
+
+                firstCard = null;
+                secondCard = null;
+
+                // Check if the game is complete
+                if (matchedPairs === images.length) {
+                    // Save the final player data before navigating to results page
+                    localStorage.setItem('playerData', JSON.stringify(playerData));
+                    window.location.href = 'results.html';
+                }
+            }
+
+            // Handle game reset
+            document.getElementById('resetGame').addEventListener('click', () => {
+                // Reset game and redirect to the start page
+                window.location.href = 'index.html';
+                // Ensure player data is still available
+                console.log("Fetched player data for reset:", playerData);
+            });
+        });
+    </script>
+</body>
+</html>
