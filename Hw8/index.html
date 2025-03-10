@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jQuery Animation</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            text-align: center;
+            background-color: #222;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .image, .text, .shape {
+            position: absolute;
+            display: none;
+        }
+
+        .shape {
+            width: 50px;
+            height: 50px;
+            background-color: red;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="image1.jpg" class="image" style="width:100px;" />
+        <div class="text">"The right man in the wrong place can make all the difference in the world." - Half-Life 2</div>
+        <div class="shape"></div>
+    </div>
+    <!--Images, Quotes, then Shapes-->
+    <script>
+        $(document).ready(function () {
+            let images = ["images/image1.png", "images/image2.png", "images/image3.png", "images/image4.png", "images/image5.png", "images/image6.png"];
+            let words = [
+                "\"The right man in the wrong place can make all the difference in the world.\" - Half-Life 2",
+                "\"and the universe said I love you because you are love. \" - Minecraft",
+                "\"It's dangerous to go alone! Take this.\" - The Legend of Zelda",
+                "\"Despite everything, it's still you.\" - Undertale",
+                "\"In this moment you are loved\" - In Stars and Time",
+                "\"You�re going to be free.\" - Undertale",
+                "\"Hence nothing remains except for our regrets.\" - OFF",
+                "\"(How weird! To be noticed, and known!)\" - In Stars and Time"
+            ];
+            let colors = ["red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan", "lime", "white"];
+            let shapes = ["50%", "0", "10%", "30%", "5%"];
+            let index = 0;
+            let lastPosImage = { left: "50px", top: "50px" };
+            let lastPosText = { left: "70%", top: "30%" };
+            let lastPosShape = { left: "30%", top: "40%" };
+
+            function getRandomPosition() {
+                let x = Math.floor(Math.random() * 80) + "%";
+                let y = Math.floor(Math.random() * 80) + "%";
+                return { left: x, top: y };
+            }
+        
+            function animateElements() {
+                let $image = $(".image");
+                let $text = $(".text");
+                let $shape = $(".shape");
+
+                let newPosImage = getRandomPosition();
+                let newPosText = getRandomPosition();
+                let newPosShape = getRandomPosition();
+
+                $image.attr("src", images[index % images.length])
+                    .css(lastPosImage)
+                    .fadeIn(1000)
+                    .animate(newPosImage, 2000)
+                    .fadeOut(1000, function () { lastPosImage = newPosImage; });
+
+                $text.text(words[index % words.length])
+                    .css(lastPosText)
+                    .fadeIn(1000)
+                    .animate(newPosText, 2000)
+                    .fadeOut(1000, function () { lastPosText = newPosText; });
+
+                $shape.css({ ...lastPosShape, backgroundColor: colors[index % colors.length], borderRadius: shapes[index % shapes.length] })
+                    .fadeIn(1000)
+                    .animate(newPosShape, 2000)
+                    .fadeOut(1000, function () { lastPosShape = newPosShape; });
+
+                index++;
+                setTimeout(animateElements, 4000);
+            }
+
+            animateElements();
+        });
+    </script>
+</body>
+</html>
