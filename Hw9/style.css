@@ -1,0 +1,50 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background: url('https://www.nasa.gov/wp-content/uploads/2025/03/1-main-deep-field-70x-zoom.jpg') no-repeat center center fixed; /* Space background */
+    background-size: cover;
+    color: white;
+    text-align: center;
+    padding: 50px;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+h1 {
+    font-size: 3em;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(0, 204, 255, 0.7);
+    margin-bottom: 20px;
+    color: #00c6ff; /* Light blue */
+}
+
+#iss-location {
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 204, 255, 0.7), 0 0 40px rgba(0, 204, 255, 0.5);
+    padding: 30px;
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
+    font-size: 1.2em;
+    text-align: left;
+    backdrop-filter: blur(10px);
+}
+
+p {
+    font-size: 18px;
+    margin: 10px 0;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+    p strong {
+        color: #00c6ff; /* Highlight important data with a light blue */
+    }
+
+#iss-location p {
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 1px;
+}
