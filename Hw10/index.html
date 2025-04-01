@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Collision</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <audio id="background-music" loop autoplay>
+        <source src="music/clairdelune.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        let player, enemy;
+        let bgColor;
+        let collisionHappened = false;
+
+        function setup() {
+            createCanvas(600, 400);
+            bgColor = color(200);
+            player = new GameObject(width / 4, height / 2, 40, 'blue');
+            enemy = new GameObject(width * 3 / 4, height / 2, 40, 'red', random(-2, 2), random(-2, 2));
+        }
+
+        function draw() {
+            background(bgColor);
+
+            // Draw border
+            stroke(0);
+            strokeWeight(5);
+            noFill();
+            rect(0, 0, width, height);
+
+            // Update and display objects
+            player.move();
+            player.display();
+            enemy.bounceMove();
+            enemy.display();
+
+            // Check for collision and bouncies
+            if (player.collidesWith(enemy)) {
+                if (!collisionHappened) {
+                    bgColor = color(random(255), random(255), random(255));
+                    player.size = random(30, 50);
+                    enemy.size = random(30, 50);
+                    handleCollision(player, enemy);
+                    collisionHappened = true;
+                }
+            } else {
+                collisionHappened = false;
+            }
+        }
+
+        function keyPressed() {
+            if (keyCode === LEFT_ARROW) player.dx = -2;
+            if (keyCode === RIGHT_ARROW) player.dx = 2;
+            if (keyCode === UP_ARROW) player.dy = -2;
+            if (keyCode === DOWN_ARROW) player.dy = 2;
+        }
+
+        function keyReleased() {
+            if ([LEFT_ARROW, RIGHT_ARROW].includes(keyCode)) player.dx = 0;
+            if ([UP_ARROW, DOWN_ARROW].includes(keyCode)) player.dy = 0;
+        }
+
+        class GameObject {
+            constructor(x, y, size, color, dx = 0, dy = 0) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                this.dx = dx;
+                this.dy = dy;
+            }
+
+            move() {
+                this.x += this.dx * 1.5;
+                this.y += this.dy * 1.5;
+                this.constrainEdges();
+            }
+
+            bounceMove() {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                if (this.x - this.size / 2 <= 0 || this.x + this.size / 2 >= width) {
+                    this.dx *= -1;
+                }
+                if (this.y - this.size / 2 <= 0 || this.y + this.size / 2 >= height) {
+                    this.dy *= -1;
+                }
+            }
+
+            constrainEdges() {
+                this.x = constrain(this.x, this.size / 2, width - this.size / 2);
+                this.y = constrain(this.y, this.size / 2, height - this.size / 2);
+            }
+
+            display() {
+                fill(this.color);
+                noStroke();
+                ellipse(this.x, this.y, this.size);
+            }
+
+            collidesWith(other) {
+                let d = dist(this.x, this.y, other.x, other.y);
+                return d < (this.size + other.size) / 2;
+            }
+        }
+
+        function handleCollision(obj1, obj2) {
+            let tempDx = obj1.dx;
+            let tempDy = obj1.dy;
+            obj1.dx = obj2.dx;
+            obj1.dy = obj2.dy;
+            obj2.dx = tempDx;
+            obj2.dy = tempDy;
+        }
+    </script>
+</body>
+</html>
