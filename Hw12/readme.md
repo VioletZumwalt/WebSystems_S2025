@@ -1,0 +1,1 @@
+Homework for this week is quite stressful since I still can't figure out any way to allow for testing! However, I think I understand pretty well?
