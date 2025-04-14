@@ -1,0 +1,3 @@
+This has been incredibly difficult to follow because I cannot find LiveServer. I added a photo about that, too, but LiveServer doesn't seem to show up in any extensions.
+I BELIEVE I have added the other information correctly, but that relies on me 100% knowing what I've written, and coding is not a strongsuit of mine. I'm fairly confident I got it.
+I added a photo about the liveserver thing, it just doesn't show up
