@@ -1,3 +1,8 @@
-This has been incredibly difficult to follow because I cannot find LiveServer. I added a photo about that, too, but LiveServer doesn't seem to show up in any extensions.
-I BELIEVE I have added the other information correctly, but that relies on me 100% knowing what I've written, and coding is not a strongsuit of mine. I'm fairly confident I got it.
-I added a photo about the liveserver thing, it just doesn't show up
+I have figured out the issue at hand that I was running into. 
+I don't think I realized that Visual Studio Code, and Visual Studio 2022 were entirely different programs
+This has 
+1. multiple platforms
+2. jump using space
+3. Bombs
+4. Instead of an animated player character, an animation plays when bombs are run into
+5. The stars have gravity
