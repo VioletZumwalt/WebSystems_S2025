@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cosmic Horror Game</title>
+  <!-- Link to the External CSS File -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-box">
+    <div id="text"></div>
+    <div id="choices"></div>
+  </div>
+
+  <div id="tone-counter">
+    <h3>Tone Tracker</h3>
+    <ul>
+      <li>Fear: <span id="fear-counter">0</span></li>
+      <li>Curiosity: <span id="curiosity-counter">0</span></li>
+      <li>Antagonism: <span id="antagonism-counter">0</span></li>
+      <li>Silence: <span id="silence-counter">0</span></li>
+      <li>Gentle: <span id="gentle-counter">0</span></li>
+    </ul>
+  </div>
+
+  <div id="debug-controls">
+    <button id="trigger-catalyst">Trigger Catalyst Intro</button>
+    <button id="trigger-lantern">Trigger Lantern Intro</button>
+    <button id="trigger-sovereign">Trigger Sovereign Intro</button>
+    <button id="trigger-weaver">Trigger Weaver Intro</button>
+    <button id="trigger-warden">Trigger Warden Intro</button>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    (function() {
+      const game = {
+        state: {
+          inRoom: true,
+          companionTone: 'gentle',
+          fearLevel: 0,
+          toneCounters: {
+            fear: 0,
+            curiosity: 0,
+            antagonism: 0,
+            silence: 0,
+            gentle: 0
+          },
+          activeVoices: ["companion"],
+          newVoiceThreshold: 6,
+          pendingVoiceIntro: null
+        },
+        history: [],
+        scenes: {
+          intro: {
+            text: `You awaken lying flat on your back. The familiar texture of your bedsheets brushes against your fingertips... Something feels wrong. \n\nYou try to open your eyes, but there’s only endless black. Your limbs feel sluggish, detached. You know this place. This is your room. Your house.`,
+            choices: [
+              { text: "Try to sit up.", next: "intro_action" }
+            ]
+          },
+          intro_action: {
+            text: `You push yourself upright, or at least you think you do. The bed creaks faintly under your weight — the same bed you've slept in for years.\n\nYet there's no faint morning light, no dim glow from the street outside. Only a suffocating darkness. Something in the air smells rancid.`,
+            choices: [
+              { text: "Stay still.", next: "wait_for_companion", tone: "silence" },
+              { text: "Reach out for something familiar.", next: "room_exploration", tone: "curiosity" }
+            ]
+          },
+          room_exploration: {
+            text: `You stretch your hands out, searching for anything familiar.<br><br>Your fingers brush against what feels like the edge of a soft rug. Carpet. Home. Relief floods you—this is your home. You know it. But something’s wrong.`,
+            choices: [
+              { text: "Crawl toward the living room.", next: "living_room_exploration", tone: "curiosity" },
+              { text: "Reach for the light switch.", next: "light_switch_attempt", tone: "curiosity" }
+            ]
+          },
+
+          living_room_exploration: {
+            text: `You shuffle forward on your hands and knees, guided by memory alone.<br><br>Your hand knocks into something—hard and cold. You recognize the outline of your coffee table... The wood feels rotted, and you quickly shake a bug off of your fingers.<br><br>The couch should be here. You reach out, and your fingers brush worn fabric. Relief again—then confusion. The fabric is damp. It smells faintly of mold, like it’s been left out in the rain.`,
+            choices: [
+              { text: "Keep exploring the living room.", next: "living_room_deeper", tone: "curiosity" },
+              { text: "Call out into the house.", next: "call_out", tone: "fear" }
+            ]
+          },
+
+          living_room_deeper: {
+            text: `The carpet squelches under your palms now. Squelches.<br><br>That’s not right. That’s not right at all.<br><br>You remember picking this carpet out. You remember arguing about its color. But the memory feels distant, as if it belongs to someone else. A hollow noise echoes from deeper in the house—an unsteady creaking, as if someone—or something—just shifted their weight on the floorboards.`,
+            choices: [
+              { text: "Freeze and listen.", next: "wait_for_companion", tone: "silence" },
+              { text: "Move toward the sound.", next: "companion_speaks", tone: "curiosity" }
+            ]
+          },
+
+          light_switch_attempt: {
+            text: `You reach upward, fingertips scraping the wall where the light switch should be.<br><br>You find it. Flip it.<br><br>Nothing.<br><br>The darkness presses against you even harder, as if punishing your attempt to escape it. Worse, you can feel something now—like static electricity dancing over your skin. Your own home feels like it’s recoiling from your touch.`,
+            choices: [
+              { text: "Stay where you are.", next: "wait_for_companion", tone: "silence" },
+              { text: "Move toward the living room.", next: "living_room_exploration", tone: "curiosity" }
+            ]
+          },
+
+          wait_for_companion: {
+            text: `You stay completely still.<br><br>The creaking quiets. For a few heartbeats, there is only your breathing and the strange weight in the air.<br><br>Then, like a voice made of thought and echo, something brushes against the inside of your mind.`,
+            choices: [
+            { text: "Next", next: "companion_speaks" }
+            ]
+          },
+          companion_speaks_silence: {
+            text: `"...You are... still," the voice says, careful, almost admiring. "Good. That will keep us safe."<br><br>It lingers, uncertain, as if waiting for your permission to exist.`,
+            choices: [
+              { text: "(Listen.)", next: "companion_continue_gentle", tone: "curiosity" },
+              { text: "(Demand answers.)", next: "companion_continue_antagonism", tone: "antagonism" }
+            ]
+          },
+
+          companion_speaks_curiosity: {
+            text: `"You are not afraid," the voice says, almost... pleased. "That is... unusual."<br><br>"I am... uncertain. But I mean you no harm."<br><br>Its presence coils close, warm and cautious, like someone kneeling beside you in the dark.`,
+            choices: [
+              { text: "(Ask what it is.)", next: "companion_continue_gentle", tone: "curiosity" },
+              { text: "(Stay cautious.)", next: "companion_continue_silence", tone: "silence" }
+            ]
+          },
+
+          companion_speaks_fear: {
+            text: `"You flinch," the voice notes, and for the first time, there is a sharpness to it.<br><br>"Don't, don't... Do not waste your energy."<br><br>There is a flicker of frustration behind its words, thinly veiled by a forced calm.`,
+            choices: [
+              { text: "(Try to calm down.)", next: "companion_continue_gentle", tone: "gentle" },
+              { text: "(Push it away.)", next: "companion_speaks_antagonism", tone: "antagonism" }
+            ]
+          },
+
+          companion_speaks_gentle: {
+            text: `"You ask, instead of recoiling," the voice says softly. "That is... rare."<br><br>"I do not know my name. I know only this: I see through your eyes. I hear through your thoughts. We are... bound."<br><br>Its tone is low and careful, as if cradling something fragile.`,
+            choices: [
+              { text: "(Ask what it wants.)", next: "companion_continue_gentle", tone: "curiosity" },
+              { text: "(Stay silent.)", next: "companion_continue_silence", tone: "silence" }
+            ]
+          },
+
+          companion_speaks_antagonism: {
+            text: `"Such hostility," the voice says, faintly wounded. "You misunderstand. I am not your enemy."<br><br>"Without me, you would be...less."<br><br>There is a tightness beneath the words now. Like a dam holding back a far more dangerous emotion.`,
+            choices: [
+              { text: "(Warn it away again.)", next: "companion_escalate", tone: "antagonism" },
+              { text: "(Bite your tongue.)", next: "companion_continue_silence", tone: "silence" }
+            ]
+          },
+  companion_continue_silence: {
+    text: `The silence stretches between you, heavy and unbroken. The voice does not press further, but you feel its presence lingering—watching.<br><br><span class="companion-dialogue">"You are cautious. That is... wise."</span><br><br>The air grows colder, and the shadows seem to press closer.`,
+    choices: [
+      { text: "(Remain silent.)", next: "companion_probe", tone: "silence" },
+      { text: "(Finally speak.)", next: "companion_speaks_gentle", tone: "gentle" }
+    ]
+  },
+  companion_continue_gentle: {
+    text: `<span class="companion-dialogue">"You are calm. That is good."</span><br><br>The voice softens, almost as if relieved. <span class="companion-dialogue">"I don't know where we are, but I can tell that this space was well loved."</span><br><br>Its tone is soothing, but there’s an undercurrent of something else—something it’s not saying.`,
+    choices: [
+      { text: "(Ask what it wants.)", next: "companion_gentle_approach", tone: "curiosity" },
+      { text: "(Stay cautious.)", next: "companion_continue_silence", tone: "silence" }
+    ]
+  },
+  companion_continue_antagonism: {
+    text: `<span class="companion-dialogue">"You lash out, but I am not your enemy."</span><br><br>The voice grows sharper, its earlier calm replaced by a faint edge of irritation. <span class="companion-dialogue">"Without me, you would be lost. Do not forget that."</span><br><br>The air around you feels heavier, as if the voice itself is pressing down on you.`,
+    choices: [
+      { text: "(Challenge it further.)", next: "companion_escalate", tone: "antagonism" },
+      { text: "(Back down.)", next: "companion_continue_silence", tone: "silence" }
+    ]
+  },
+  companion_escalate: {
+    text: `<span class="companion-dialogue">"Enough!"</span><br><br>The voice hisses, pinning you in place. <span class="companion-dialogue">"You think you can survive without me? You cannot."</span><br><br>The shadows around you twist and writhe, and the air grows suffocatingly thick. <span class="companion-dialogue">"You will listen. You will obey. Or you will fall."</span>`,
+    choices: [
+      { text: "(Reluctantly agree.)", next: "companion_trust", tone: "gentle" },
+      { text: "(Refuse to yield.)", next: "companion_yield", tone: "antagonism" }
+    ]
+  },
+  companion_probe: {
+    text: `<span class="companion-dialogue">"Silent, are we? That’s fine. I can wait. But they won’t."</span><br><br>The voice grows colder, and the air around you seems to thicken. You feel a faint vibration beneath your feet, as if something is moving closer.<br><br>The damp stone floor feels uneven, and the faint scent of rot grows stronger. The voice speaks again, softer this time, almost coaxing: <span class="companion-dialogue">"You don’t want to be here when they arrive."</span>`,
+    choices: [
+      { text: "I don't..?", next: "companion_gentle_approach", tone: "curiosity" },
+      { text: "Listen, but don't respond", next: "companion_trust", tone: "gentle" }
+    ]
+  },
+  companion_yield: {
+    text: `<span class="companion-dialogue">"... Fine"</span><br><br>The Companion’s presence fades slightly, but you can tell it didn't leave. You feel an air of hesitation, but it speaks up again<br><br><span class="companion-dialogue">"As much as I want to respect your decision, I can't necessarily leave. You're going to have to go somewhere"</span>,`,
+    choices: [
+      { text: "Very well, then.", next: "companion_trust", tone: "fear" },
+      { text: "Absolutely not.", next: "stubborn", tone: "antagonism" }
+    ]
+  },
+  stubborn: {
+    text: `Any stepping back the companion might have done fades, as its presence overtakes your mind. <span class="companion-dialogue">"You CAN'T do that, if we STAY here, we'll DIE"</span><br><br>`,
+    choices: [
+      { text: "Oh, sorry.", next: "companion_relief" },
+      { text: "I'm built different", next: "built_different", tone: "antagonism" }
+    ]
+  },
+  built_different: {
+    text: `<span class="companion-dialogue">"You are built HUMAN, that is certainly different from me, but-"</span><br><br> You feel an urge to move, your muscles screaming at you to do anything but just stand here.`,
+    choices: [
+      { text: "Move along with them", next: "companion_relief" },
+      { text: "Tense up", next: "tense", tone: "antagonism" }
+    ],
+  },
+  tense: {
+    text: `Your muscles lock up, your body screaming at you as you just Refuse To Move. <br><br> You can tell you're fighting it, that Companion. Its exerting what power it does have to try and get you to move.<br><br> It's probably making up those footsteps you hear.<br><br> <span class="companion-dialogue">"You are not built different, you are just stubborn. Please, move."</span><br><br>`,
+    choices: [
+      { text: "Give in", next: "companion_relief" },
+      { text: "Never Back Down", next: "forced_to_yield", tone: "antagonism" }
+    ]
+  },
+  forced_to_yield: {
+    text: `Your muscles lock up, your body screaming at you as you just Refuse To Move.<br><br>You can tell you're fighting it, that Companion. It's exerting what power it does have to try and get you to move.<br><br>It's probably making up those footsteps you hear.<br><br><span class="companion-dialogue">"For the love of whatever you worship, we need to move now."</span><br><br><div class="voice-block"><span class="catalyst-dialogue">"Stubbornness is a luxury we cannot afford. Move, or I will make you."</span><br><br></div>`,
+    choices: [
+      { text: "Give in", next: "companion_relief" },
+    ],
+  },
+  companion_relief: {
+    text: `The Companion seems to relax slightly, its presence less oppressive now. <span class="companion-dialogue">"Good. Let’s keep moving."</span>`,
+    choices: [
+      { text: "Move forward.", next: "chapter1_start" }
+    ]
+  },
+          call_out: {
+            text: `Your voice cracks as you call into the blackness. "Hello?"\n\nFor a moment, there's only your own breath and the faint hum of electricity — the fridge downstairs, maybe? Or something else.\n\nThen, barely audible, something answers. A whisper that seems to come from just behind you, brushing the hairs on the back of your neck.`,
+            choices: [
+              { text: "Follow the whisper.", next: "companion_speaks", tone: "curiosity" },
+              { text: "Stay still and listen.", next: "companion_speaks", tone: "silence" }
+            ]
+          },
+          companion_speaks: {
+            text: `<span class='companion-dialogue'>"...Are they gone yet?"</span><br><br>The voice is soft, as if afraid to be overheard.\n\nYour mind latches onto the memory of locking the door before bed. Every window shut. Every light off.\n\nSomething is wrong. Someone — something — is in your home.`,
+            choices: [
+              { text: "(Stay silent.)", next: "companion_speaks_silence", tone: "silence" },
+              { text: "('Hello?')", next: "companion_speaks_curiosity", tone: "curiosity" },
+              { text: "(Panic internally.)", next: "companion_speaks_fear", tone: "fear" },
+              { text: "('Who are you?')", next: "companion_speaks_gentle", tone: "gentle" },
+              { text: "('Get out of my head.')", next: "companion_speaks_antagonism", tone: "antagonism" }
+            ]
+          },
+
+          companion_probe: {
+            text: `<span class="companion-dialogue">"Silent, are we? That’s fine. I can wait. But they won’t."</span>\n\nThe voice grows colder, and the air around you seems to thicken. You feel a faint vibration beneath your feet, as if something is moving closer. The damp stone floor feels uneven, and the faint scent of rot grows stronger. The voice speaks again, softer this time, almost coaxing: <span class="companion-dialogue">"You don’t want to be here when they arrive."</span>`,
+            choices: [
+              { text: "Who are they?", next: "companion_gentle_approach", tone: "curiosity" },
+              { text: "I’ll follow you.", next: "companion_trust", tone: "gentle" }
+            ]
+          },
+          companion_gentle_approach: {
+            text: `<span class="companion-dialogue">"Good. It’s better this way. I told you we could work together, didn’t I? You don’t need to be afraid... not of me."</span>\n\nThe voice is soothing, almost hypnotic, but there’s something unsettling about how it lingers on the last words. The shadows seem to retreat slightly, revealing more of the damp, crumbling stone walls around you. The air remains heavy, as if the darkness itself is watching.`,
+            choices: [
+              { text: "I’ll follow you.", next: "companion_trust", tone: "gentle" },
+              { text: "I’m not sure... I don’t trust you yet.", next: "companion_doubt", tone: "fear" }
+            ]
+          },
+          companion_frustration: {
+            text: `<span class="companion-dialogue">"Still scared? Why? There’s nothing here but shadows and echoes. You’re wasting time."</span>\n\nThe voice sharpens, cutting through the oppressive silence. The shadows around you seem to ripple, and the faint sound of something scraping against the damp stone floor reaches your ears. The Companion’s impatience is palpable, adding to the weight pressing down on you.`,
+            choices: [
+              { text: "I can’t calm down, I’m scared!", next: "companion_anger", tone: "fear" },
+              { text: "I’m trying, just tell me what’s going on.", next: "companion_explain", tone: "curiosity" }
+            ]
+          },
+          companion_anger: {
+            text: `<span class="companion-dialogue">"Enough! You’re making this harder than it needs to be. If you don’t start listening, we’ll both be lost. Do you want that?"</span>\n\nThe voice is no longer soft—it’s commanding, almost threatening. The air feels heavier, and the shadows around you seem to shift, as if reacting to the Companion’s growing agitation. A faint, rhythmic thudding sound begins to echo in the distance, growing louder with each passing moment. The dampness in the air seems to intensify, and the scent of decay becomes almost unbearable.`,
+            choices: [
+              { text: "I’ll listen. Just please, stop.", next: "companion_trust", tone: "gentle" },
+              { text: "I don’t care. Leave me alone.", next: "companion_hostility", tone: "antagonism" }
+            ]
+          },
+          companion_doubt: {
+            text: `<span class="companion-dialogue">"Doubt is dangerous here. You’ll be alright, but only if you trust me. We’re in this together, whether you like it or not."</span>\n\nThe voice wavers slightly, as if trying to mask its own uncertainty. The shadows around you seem to pulse, and you can’t tell if it’s your fear or something else entirely. The faint sound of whispers begins to rise, overlapping and growing louder, though you can’t make out the words.`,
+            choices: [
+              { text: "Alright, I’ll trust you.", next: "companion_trust", tone: "gentle" },
+              { text: "I still don’t know if I can trust you.", next: "companion_reassure", tone: "fear" }
+            ]
+          },
+          companion_reassure: {
+            text: `<span class="companion-dialogue">"I know it’s hard, but trust me. We don’t have time for hesitation. If you stay here, they’ll find you. And if they find you... well, you don’t want that."</span>\n\nThe voice grows quieter, almost pleading, but the ominous warning lingers in the air. The shadows seem to stretch closer, as if drawn to your indecision. The faint sound of footsteps echoes in the distance, slow and deliberate.`,
+            choices: [
+              { text: "Yes, I’m ready.", next: "companion_trust", tone: "gentle" },
+              { text: "I’m not ready, but I’ll go anyway.", next: "companion_resign", tone: "fear" }
+            ]
+          },
+          companion_hostility: {
+            text: `<span class="companion-dialogue">"Fine. Stay here. But don’t expect me to save you when it all falls apart."</span>\n\nThe voice is cold now, devoid of the earlier attempts at reassurance. The silence that follows is suffocating, and the shadows seem to close in, as if mocking your isolation.`,
+            choices: [
+              { text: "I’m not resisting anymore. Let’s go.", next: "companion_trust", tone: "gentle" },
+              { text: "I still won’t trust you.", next: "companion_isolation", tone: "antagonism" }
+            ]
+          },
+          companion_isolation: {
+            text: `<span class="companion-dialogue">"Very well. Stay here. You’ll regret it."</span>\n\nThe Companion’s presence fades, leaving you alone in the oppressive darkness. The air grows colder, and the silence is broken only by the faint sound of something moving in the distance. You are truly alone now—or are you?`,
+            choices: [
+              { text: "Try to move anyway.", next: "companion_trust", tone: "fear" }
+            ]
+          },
+          companion_trust: {
+            text: "You decide to follow the Companion's words, unsure of whether you can fully trust it. But for now, it’s the only option. The path ahead is uncertain, but you’ll have to move forward.",
+            choices: [
+              { text: "Proceed forward.", next: "chapter1_start", tone: "gentle" }
+            ]
+          },
+          breakin_reflection: {
+            text: `You remember locking the door. Twice, like always.\n\nYou think of the windows — latched, checked, double-checked. No signs of forced entry. No alarms triggered.\n\nWhatever is here... it didn't come in. It was already waiting.`,
+            choices: [
+              { text: "Return to the present.", next: "companion_speaks", tone: "fear" }
+            ]
+          },
+          
+          chapter1_start: {
+            text: `<div class="voice-block"><span class="companion-dialogue">"I believe... You lived here. Take us to the front door, it'll be safest to leave quickly."</span><br><br></div><div class="voice-block"><span class="catalyst-dialogue">"You hesitate too much. If we don't move now, we won't survive."</span><br><br></div><div class="voice-block"><span class="lantern-dialogue">"This house holds memories. Some you may not want to uncover."</span><br><br></div><div class="voice-block"><span class="sovereign-dialogue">"Do not falter. Weakness will only invite ruin."</span><br><br></div><div class="voice-block"><span class="weaver-dialogue">"The threads of this place bind you. You cannot escape them."</span><br><br></div><div class="voice-block"><span class="warden-dialogue">"Stay cautious. Not every path is safe."</span><br><br></div>`,
+            choices: [
+                { text: "Move forward cautiously.", next: "demo_end" },
+                { text: "Move forward quickly.", next: "demo_end" },
+                { text: "Ignore the voices and move on.", next: "demo_end" }
+            ],
+            onRender: function () {
+                updateVoiceDialogueVisibility(); // Automatically handle voice dialogue visibility
+            }
+          },
+
+
+          demo_end:{
+            text: `<p>Thaaaaat's it for now!<br><br>Thanks for playing!<br><br></p>
+                <div class="voice-block"><span class="companion-dialogue">"Wait! You can't stop here. There's so much more to do!"</span><br><br></div><div class="voice-block"><span class="catalyst-dialogue">"You will return to a corpse. Avoidance is not survival."</span><br><br></div><div class="voice-block"><span class="lantern-dialogue">"Another unfinished story..."</span><br><br></div><div class="voice-block"><span class="sovereign-dialogue">"We will NOT be left behind-"</span><br><br></div><div class="voice-block"><span class="weaver-dialogue">"The world unravels without care."</span><br><br></div><div class="voice-block"><span class="warden-dialogue">"Leaving now is reckless. You are not ready to face what's out there."</span><br><br></div>
+                <p>This project will be continued, with much cleaner code. Onto future stories!</p>`,
+            choices: [
+                { text: "Oh well, an end's but an end.", next: "intro" }
+            ],
+            onRender: function () {
+                updateVoiceDialogueVisibility(); // Automatically handle voice dialogue visibility
+            }
+          },
+          
+          catalyst_intro: {
+            text: `There is a sharp whistling sound, before the feeling of something sharp thudding into your chest.<br><br><span class="catalyst-dialogue">"You hesitate. You falter. Do you think they will wait for you?"</span><br><br>The Companion’s voice trembles:<br><br><span class="companion-dialogue">"What is that? What is that? What is that—"</span><br><br>The voice grows louder, almost a roar, as a burning sensation spreads through your chest:<br><br><span class="catalyst-dialogue">"Stagnation is death. And death... Death is peace. We don’t deserve peace."</span>`,
+            choices: [
+              { text: "Pull out whatever stabbed you", next: "catalyst_intro_2" }
+            ]
+          },
+          catalyst_intro_2: {
+            text: `There's nothing there, yet you tear at your chest in instinct. Your lungs feel full of liquid fire, spreading across your body, through your blood, the very blood that seeps down your chest.<br><br><span class="catalyst-dialogue">"I am the push you need. The fear that keeps you alive."</span><br><br>The burning intensifies, making it hard to think. Your Companion’s voice is frantic:<br><br><span class="companion-dialogue">"You need to calm down, there's nothing, you're fine, but you need to stop-"</span><br><br>The voice snaps back, the heat flaring:<br><br><span class="catalyst-dialogue">"You cannot stop. You cannot rest. If you do, they will find you."</span>`,
+            choices: [
+              { text: "Struggle", next: "catalyst_intro_3" }
+            ]
+          },
+          catalyst_intro_3: {
+            text: `<span class="catalyst-dialogue">"I want you to survive. But survival requires sacrifice."</span><br><br>The burning subsides, leaving behind a hollow ache. You pat down your chest, your shirt is dry, but your chest is raw from how you clawed at it. Your Companion’s voice is filled with dread:<br><br><span class="companion-dialogue">"You have to listen, when I say there's nothing, or we will die."</span>`,
+            choices: [
+              { text: "Return to the present.", next: "return_to_previous_scene" }
+            ]
+          },
+          lantern_intro: {
+            text: `The sound of rustling pages fills the air, as if an unseen book is being flipped through. The air seems like it stills, before the sensation of a dagger being jammed into your skull makes you stumble.<br><br><span class="lantern-dialogue">"You have forgotten the scent of smoke on your hands. I have not."</span><br><br>The Companion’s voice rises, panicked:<br><br><span class="companion-dialogue">"Stop. Stop talking. They don’t need to know."</span><br><br>The voice continues, unbothered:<br><br><span class="lantern-dialogue">"Shall I remind you?"</span>`,
+            choices: [
+              { text: "Try to listen", next: "lantern_intro_2" }
+            ]
+          },
+          lantern_intro_2: {
+            text: `The pain is agonizing, your mind swirls.  You crouch to the ground, if only to prevent yourself from falling in some unknown direction.<br><br><span class="lantern-dialogue">"Memories are fragile things. But I remember for you."</span><br><br>The scent of old ink and parchment fills your senses, and the Companion’s voice grows quieter:<br><br><span class="companion-dialogue">"This is dangerous. You don’t know what they’ll show you."</span><br><br>The voice speaks again, its tone patient:<br><br><span class="lantern-dialogue">"I will show you what you need to see. But you must be willing to look."</span><br><br>`,
+            choices: [
+              { text: "Why does it hurt?", next: "lantern_intro_3" }
+            ]
+          },
+          lantern_intro_3: {
+            text: `You try to squeak out any sort of response, but the words are lost in the haze of pain. The voice continues, its tone almost soothing:<br><br><span class="lantern-dialogue">"I am here to guide you through these harsh truths."</span><br><br>The Companion sighs, resigned:<br><br><span class="companion-dialogue">"...Are you alright?"</span>`,
+            choices: [
+              { text: "Return to the present.", next: "return_to_previous_scene" }
+            ]
+          },
+          sovereign_intro: {
+            text: `<span class="companion-dialogue">"Something’s wrong. Stay close."</span><br><br>The air grows heavy, pressing against your chest like a weight you can’t shake. Your limbs feel sluggish, as if the air itself is thickening around you. A voice, cold and commanding, cuts through the silence, surrounding you, yet you know it is inside your head:<br><br><span class="sovereign-dialogue">"You will listen. You will obey."</span><br><br>Your Companion’s voice wavers, uncharacteristically uncertain:<br><br><span class="companion-dialogue">"Who—what is this? This isn’t right."</span><br><br>The weight intensifies, pinning you in place. The voice continues, ignoring your Companion entirely:<br><br><span class="sovereign-dialogue">"I will keep you alive when all others would have squandered you. Do not waste my efforts."</span>`,
+            choices: [
+              { text: "Who are you to command me?", next: "sovereign_intro_2" }
+            ]
+          },
+          sovereign_intro_2: {
+            text: `<span class="sovereign-dialogue">"I am the reason you still draw breath."</span><br><br>The Companion scoffs, their nervousness giving way to irritation:<br><br><span class="companion-dialogue">"If you have traveled through the same pathways as I had, you're just as stuck as I am. You are above no one."</span><br><br>The weight shifts, pressing harder against your chest, making it difficult to breathe. The voice responds, unyielding:<br><br><span class="sovereign-dialogue">"And yet, I am able to do perform such acts. No, I am not trapped."</span>`,
+            choices: [
+              { text: "...", next: "sovereign_intro_3" }
+            ]
+          },
+          sovereign_intro_3: {
+            text: `You're unable to respond, the weight pressing down on you like a vice. The voice continues, its tone almost mocking:<br><br><span class="sovereign-dialogue">"I am your Sovereign, and without me, you are nothing."</span><br><br>The pressure suddenly releases, leaving you gasping for air. Your Companion sounds quite shaken:<br><br><span class="companion-dialogue">"Breathe, Breathe... We will continue when you're ready."</span>`,
+            choices: [
+              { text: "Return to the present.", next: "return_to_previous_scene" }
+            ]
+          },
+          weaver_intro: {
+            text: `<span class="companion-dialogue">"...You're just going to ignore me?"</span><br><br>A sudden weight pulls at your chest, as if unseen threads have hooked into your ribs. Your breath catches, and the sensation spreads—delicate yet unyielding, like a spider weaving its web across your skin. A voice, low and resonant, cuts through the stillness:<br><br><span class="weaver-dialogue">"Why do you deny what clings to you like blood? You cannot outrun the root that split to bind you."</span><br><br>The pull tightens, each thread tugging with purpose, as if testing how much you can bear.`,
+            choices: [
+              { text: "(Find something to distract yourself.)", next: "weaver_intro_2" }
+            ]
+          },
+          weaver_intro_2: {
+            text: `You try to focus on anything else, but the threads do not relent. Gentle fingers brush against your cheek, soft as a whisper, while a tight fist coils around your heart. You choke, trying to hide it behind a cough. The voice returns, softer now, but no less overwhelming:<br><br><span class="weaver-dialogue">"I can barely whisper your name, though my heart would thunder it across all creation."</span><br><br><span class="companion-dialogue">"What—what is that? Stop acting like you can't hear that."</span>`,
+            choices: [
+              { text: "(Find something else to focus on.)", next: "weaver_intro_3" }
+            ]
+          },
+          weaver_intro_3: {
+            text: `The threads tighten, their movements deliberate, as if stitching you into place. Each pull feels like a question, each knot a demand. The voice grows more insistent, its words threading through your thoughts like a needle through fabric:<br><br><span class="weaver-dialogue">"Do not turn your face from me. You carry threads of what was once wove with care. You will choke upon them."</span><br><br><span class="companion-dialogue">"Please stop ignoring it."</span>`,
+            choices: [
+              { text: "Return to the present.", next: "return_to_previous_scene" }
+            ]
+          },
+          warden_intro: {
+            text: `<span class="companion-dialogue">"Stay alert. This place isn't safe."</span><br><br>A steady warmth washes over you, like the weight of a heavy blanket on a cold night. A voice, calm and deliberate, speaks:<br><br><span class="warden-dialogue">"Stay. Not every enemy bares teeth."</span><br><br>The Companion bristles, their tone sharp<br><br><span class="companion-dialogue">"Who are you to tell them that? You don’t know what’s out there."</span><br><br>The voice doesn’t rise to meet the Companion’s hostility. Instead, it softens, like a hand resting gently on your shoulder:<br><br><span class="warden-dialogue">"But I will not see you bleed again."</span>`,
+            choices: [
+              { text: "Why..?", next: "warden_intro_2" }
+            ]
+          },
+          warden_intro_2: {
+            text: `<span class="warden-dialogue">"Because someone must. And you cannot do this alone."</span><br><br>The air feels calmer, but you're struck with a realization. You cannot move, even if you wanted to. The Companion mutters:<br><br><span class="companion-dialogue">"No, no, no, get out, get out"</span><br><br>The voice doesn’t respond to the Companion. You feel a tightening in what is holding you still.<br><br><span class="warden-dialogue">"You are not alone. Not anymore."</span>`,
+            choices: [
+              { text: "What do you want from me?", next: "warden_intro_3" }
+            ]
+          },
+          warden_intro_3: {
+            text: `<span class="warden-dialogue">"Only that you survive. That is enough."</span><br><br>The Warden sighs, and you find yourself able to move once more.<br><br><span class="companion-dialogue">"You truly are an open invitation, aren't you."</span>`,
+            choices: [
+              { text: "Return to the present.", next: "return_to_previous_scene" }
+            ]
+          }
+        }
+      };
+
+      const voices = {
+        companion: {
+          name: "Companion",
+          color: "blue",
+          description: "Manipulative, knows nothing, and is the reason for blindness. Describes most things.",
+          dialogue: `"I know it’s hard, but trust me. We don’t have time for hesitation. If you stay here, they’ll find you. And if they find you... well, you don’t want that."`
+        },
+        sovereign: {
+          name: "Sovereign",
+          color: "orange",
+          description: "Better than you, latched on to the memory of once being grand, but unsure in what way.",
+          dialogue: `"You will listen. You will obey. I have kept you alive when all others would have squandered you."`
+        },
+        lantern: {
+          name: "Lantern",
+          color: "yellow",
+          description: "An idea of endless knowledge, but truly limited to memory. Limits the player's access for their protection.",
+          dialogue: `"You have forgotten the scent of smoke on your hands. I have not. Shall I remind you?"`
+        },
+        catalyst: {
+          name: "Catalyst",
+          color: "red",
+          description: "Fearful, hateful, twisted into pushy.",
+          dialogue: `"Stagnation is death. And death... Death is peace. We don't deserve peace."`
+        },
+        weaver: {
+          name: "Weaver",
+          color: "light purple",
+          description: "Once carved paths in the stars, now barely whispers your name.",
+          dialogue: `"Once, I would have carved paths for you in the stars. Now, I can barely whisper your name."`
+        },
+        warden: {
+          name: "Warden",
+          color: "burnt red",
+          description: "Protective, cautious, and unwilling to see you hurt again.",
+          dialogue: `"Stay, not every enemy bares teeth. But I will not see you bleed again."`
+        },
+        maw: {
+          name: "Maw(unused)",
+          color: "purple",
+          description: "Dark, destructive, and self-sabotaging.",
+          dialogue: `"Oh, but why would anyone stay for you? They'll leave you anyway. Better if you leave first. Better if you break everything first."`
+        }
+      };
+
+      let previousScene = null;
+
+      function renderScene(sceneKey) {
+        if (game.state.pendingVoiceIntro) {
+            const voiceKey = game.state.pendingVoiceIntro;
+            game.state.pendingVoiceIntro = null;
+            introduceVoice(voiceKey);
+            return;
+        }
+
+        console.log("Rendering Scene:", sceneKey);
+        const scene = game.scenes[sceneKey];
+        if (!scene) {
+            console.error("Scene not found:", sceneKey);
+            return;
+        }
+
+        game.history.push(sceneKey);
+        $("#text").html(scene.text);
+        const $choices = $("#choices").empty();
+
+        scene.choices?.forEach(choice => {
+            $("<div>", { class: "choice", text: choice.text })
+                .appendTo($choices)
+                .on("click", () => {
+                    if (sceneKey === "demo_end") {
+                        resetToneCounters(); // Reset tone counters when leaving demo_end
+                    }
+
+                    if (choice.next === "return_to_previous_scene") {
+                        if (previousScene) {
+                            renderScene(previousScene);
+                        } else {
+                            console.error("No previous scene to return to.");
+                        }
+                    } else {
+                        if (choice.tone) {
+                            game.state.toneCounters[choice.tone]++;
+                            updateToneCounter(); // Update tone tracker immediately
+                        }
+                        checkForNewVoice();
+                        renderScene(choice.next);
+                    }
+                });
+        });
+
+        if (scene.onRender) {
+            scene.onRender();
+        }
+      }
+
+      function checkForNewVoice() {
+        const { toneCounters, activeVoices, newVoiceThreshold } = game.state;
+
+        if (game.state.pendingVoiceIntro) return;
+
+        for (const tone in toneCounters) {
+          if (toneCounters[tone] >= newVoiceThreshold) {
+            const newVoice = getVoiceForTone(tone);
+            if (newVoice && !activeVoices.includes(newVoice)) {
+              game.state.pendingVoiceIntro = newVoice;
+              toneCounters[tone] = 0;
+              updateToneCounter();
+              break;
+            }
+          }
+        }
+      }
+
+      function getVoiceForTone(tone) {
+        const toneToVoiceMap = {
+          antagonism: "catalyst",
+          curiosity: "lantern",
+          fear: "sovereign",
+          silence: "weaver",
+          gentle: "warden"
+        };
+        return toneToVoiceMap[tone];
+      }
+
+      function introduceVoice(voiceKey) {
+        const voice = voices[voiceKey];
+        game.state.activeVoices.push(voiceKey);
+        console.log("Active Voices:", game.state.activeVoices);
+
+        previousScene = game.history[game.history.length - 1];
+        console.log("Previous Scene:", previousScene);
+
+        const introScenes = {
+          catalyst: "catalyst_intro",
+          lantern: "lantern_intro",
+          sovereign: "sovereign_intro",
+          weaver: "weaver_intro",
+          warden: "warden_intro"
+        };
+
+        const introScene = introScenes[voiceKey];
+        if (introScene && game.scenes[introScene]) {
+          renderScene(introScene);
+        }
+      }
+
+      function debugIncrementTone(tone) {
+        if (!game.state.pendingVoiceIntro) {
+          game.state.toneCounters[tone] += game.state.newVoiceThreshold;
+          updateToneCounter();
+          checkForNewVoice();
+        } else {
+          console.warn("A voice intro is already pending.");
+        }
+      }
+
+      function updateToneCounter() {
+        const { toneCounters } = game.state;
+        document.getElementById("fear-counter").textContent = toneCounters.fear;
+        document.getElementById("curiosity-counter").textContent = toneCounters.curiosity;
+        document.getElementById("antagonism-counter").textContent = toneCounters.antagonism;
+        document.getElementById("silence-counter").textContent = toneCounters.silence;
+        document.getElementById("gentle-counter").textContent = toneCounters.gentle;
+      }
+
+      function resetToneCounters() {
+        for (const tone in game.state.toneCounters) {
+            game.state.toneCounters[tone] = 0;
+        }
+        updateToneCounter(); // Update the tone tracker display
+      }
+
+      function updateVoiceDialogueVisibility() {
+        // Loop through all voices and toggle visibility based on activeVoices
+        for (const voiceKey in voices) {
+            const voiceClass = `.${voiceKey}-dialogue`;
+            if (game.state.activeVoices.includes(voiceKey)) {
+                $(voiceClass).closest(".voice-block").show(); // Show the dialogue block
+            } else {
+                $(voiceClass).closest(".voice-block").hide(); // Hide the dialogue block
+            }
+        }
+      }
+
+      $(document).ready(() => {
+        renderScene("intro");
+
+        $("#trigger-catalyst").on("click", () => debugIncrementTone("fear"));
+        $("#trigger-lantern").on("click", () => debugIncrementTone("curiosity"));
+        $("#trigger-sovereign").on("click", () => debugIncrementTone("antagonism"));
+        $("#trigger-weaver").on("click", () => debugIncrementTone("silence"));
+        $("#trigger-warden").on("click", () => debugIncrementTone("gentle"));
+
+        $("#game-box").on("click", ".keyword", function () {
+          const key = $(this).data("key");
+          if (game.scenes[key]) {
+            renderScene(key);
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
+``` 

@@ -1,0 +1,168 @@
+/* General Body Styling */
+body {
+  background-color: #111;
+  color: #eee;
+  font-family: 'Courier New', monospace;
+  padding: 20px;
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#game-box {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+  border: 2px solid #333;
+  border-radius: 10px;
+  background-color: #222;
+  box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.1);
+}
+
+/* Choices & Keywords */
+.choice {
+  cursor: pointer;
+  padding: 8px;
+  margin-top: 8px;
+  background-color: #222;
+  border: 1px solid #333;
+  border-radius: 5px;
+}
+
+.choice:hover {
+  background-color: #444;
+}
+
+.keyword {
+  color: #7af;
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+
+/* Companion's Dialogue Styling */
+.voice-dialogue {
+  font-style: italic;
+  margin: 10px 0;
+}
+
+.companion-dialogue {
+  color: rgb(66, 76, 219);
+}
+
+.sovereign-dialogue {
+  color: orange;
+}
+
+.lantern-dialogue {
+  color: yellow;
+}
+
+.catalyst-dialogue {
+  color: red;
+}
+
+.weaver-dialogue {
+  color: rgb(159, 78, 216);
+}
+
+.warden-dialogue {
+  color: #8f3b1a; /* Burnt red */
+}
+
+.maw-dialogue {
+  color: rgb(151, 83, 151);
+}
+
+/* Player's Dialogue (Default) */
+.player-dialogue {
+  color: #eee;
+}
+
+/* Scene Titles */
+.scene-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff4500;
+  margin-top: 20px;
+}
+
+/* Text Styling for Main Content */
+#text {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 16px;
+  color: #ddd;
+}
+
+/* Choices Box */
+#choices {
+  margin-top: 20px;
+}
+
+/* Additional Hover Effects */
+.choice:hover {
+  background-color: #444;
+  transform: scale(1.05);
+  transition: transform 0.2s ease, background-color 0.3s;
+}
+
+.keyword:hover {
+  color: #add8e6;
+  text-decoration: underline;
+}
+
+.link {
+  color: #7af; /* Light blue, same as keyword for consistency */
+  text-decoration: underline dotted;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #add8e6; /* Slightly brighter on hover */
+}
+
+/* filepath: c:\Users\vzumw\Documents\GitHub\WebSystems_S2025\final concept\style.css */
+.inline-link {
+  color: #7af; /* Light blue */
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+
+.inline-link:hover {
+  color: #add8e6; /* Brighter blue on hover */
+  text-decoration: underline;
+}
+
+#tone-counter {
+  position: fixed;
+  top: 10%;
+  left: 10px;
+  background-color: #222;
+  color: #eee;
+  padding: 10px;
+  border-radius: 5px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  width: 150px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+}
+
+#tone-counter h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  text-align: center;
+}
+
+#tone-counter ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#tone-counter li {
+  margin: 5px 0;
+}
